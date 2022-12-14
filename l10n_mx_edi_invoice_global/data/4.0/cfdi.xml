@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template id="cfdiv40_pos">
+        <cfdi:Comprobante
+            xsi:schemaLocation="http://www.sat.gob.mx/cfd/4 http://www.sat.gob.mx/sitio_internet/cfd/4/cfdv40.xsd http://www.sat.gob.mx/ComercioExterior11 http://www.sat.gob.mx/sitio_internet/cfd/ComercioExterior11/ComercioExterior11.xsd"
+            xmlns:cfdi="http://www.sat.gob.mx/cfd/4"
+            xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+            Version="4.0"
+            t-att-Fecha="date"
+            t-att-Folio="(folio or '')[:25]"
+            t-att-Serie="(serie or '')[:40]"
+            Sello=""
+            t-att-FormaPago="record.payment_method_id.l10n_mx_edi_payment_method_id.code or '99'"
+            t-att-NoCertificado="certificate_number"
+            t-att-Certificado="certificate"
+            t-att-SubTotal="'%.2f' % float(amount_untaxed)"
+            t-att-Descuento="'%.2f' % float(amount_discount) if float(amount_discount) &gt; 0 else False"
+            t-att-Moneda="currency"
+            t-att-TipoCambio="rate"
+            t-att-Total="'%.2f' % float(amount_total)"
+            t-att-TipoDeComprobante="document_type"
+            MetodoPago="PUE"
+            Exportacion="01"
+            t-att-LugarExpedicion="supplier.zip"
+            t-att-Confirmacion="confirmation">
+            <cfdi:InformacionGlobal t-att-Periodicidad="periodicidad" t-att-Meses="meses" t-att-Año="yearg" />
+            <t t-set="related" t-value="record.get_cfdi_related()"/>
+            <t t-if="related">
+                <cfdi:CfdiRelacionados
+                    t-att-TipoRelacion="related['type']">
+                    <t t-foreach="related['related']" t-as="number">
+                        <cfdi:CfdiRelacionado t-att-UUID="number"/>
+                    </t>
+                </cfdi:CfdiRelacionados>
+            </t>
+            <cfdi:Emisor
+                t-att-Rfc="supplier.vat"
+                t-att-Nombre="supplier_name"
+                t-att-RegimenFiscal="supplier.l10n_mx_edi_fiscal_regime"/>
+            <cfdi:Receptor
+                Rfc="XAXX010101000"
+                Nombre="PUBLICO EN GENERAL"
+                t-att-DomicilioFiscalReceptor="supplier.zip"
+                RegimenFiscalReceptor="616"
+                UsoCFDI="S01"/>
+            <cfdi:Conceptos>
+                <t t-foreach="record" t-as="line">
+                    <t t-set="line_discount" t-value="sum([record._get_discount(6, l) for l in line.lines])"/>
+                    <t t-set="taxes_line" t-value="line._l10n_mx_edi_create_taxes_cfdi_values()"/>
+                    <cfdi:Concepto
+                        ClaveProdServ="01010101"
+                        t-att-NoIdentificacion="line.name or ''"
+                        Cantidad="1"
+                        ClaveUnidad="ACT"
+                        Descripcion="Venta"
+                        t-att-ValorUnitario="'%.6f' % abs(sum([record._get_subtotal_wo_discount(6, l) if l.qty else 0.0 for l in line.lines]))"
+                        t-att-Importe="'%.6f' % abs(sum([record._get_subtotal_wo_discount(6, l) for l in line.lines]))"
+                        t-att-Descuento="'%.6f' % line_discount if line_discount &gt; 0 else False"
+                        t-att-ObjetoImp= "'02' if taxes_line['transferred'] or taxes_line['withholding'] else '01'">
+                        <t t-if="taxes_line['transferred'] or taxes_line['withholding']">
+                            <cfdi:Impuestos>
+                                <t t-if="taxes_line['transferred']">
+                                    <cfdi:Traslados>
+                                        <t t-foreach="taxes_line['transferred']" t-as="transferred">
+                                            <cfdi:Traslado
+                                                t-att-Base="'%.6f' % transferred['base']"
+                                                t-att-Impuesto="tax_name(transferred['name'])"
+                                                t-att-TipoFactor="transferred['type']"
+                                                t-att-TasaOCuota="'%.6f' % (transferred['rate'])"
+                                                t-att-Importe="'%.6f' % (transferred['amount'] or 0.0)"/>
+                                        </t>
+                                    </cfdi:Traslados>
+                                </t>
+                            </cfdi:Impuestos>
+                        </t>
+                    </cfdi:Concepto>
+                </t>
+            </cfdi:Conceptos>
+            <t t-if="taxes['transferred'] is not None or taxes['withholding'] is not None">
+                <cfdi:Impuestos
+                    t-att-TotalImpuestosTrasladados="('%.2f' % taxes['total_transferred']) if taxes['transferred'] else None"
+                    t-att-TotalImpuestosRetenidos="('%.2f' % taxes['total_withhold']) if taxes['withholding'] else None">
+                    <t t-if="taxes['transferred']">
+                        <cfdi:Traslados>
+                            <t t-foreach="taxes['transferred']" t-as="transferred">
+                                <cfdi:Traslado
+                                    t-att-Importe="'%.2f' % (transferred['amount'] or 0.0)"
+                                    t-att-Base="'%.2f' % (transferred['base'] or 0.0)"
+                                    t-att-Impuesto="tax_name(transferred['name'])"
+                                    t-att-TipoFactor="transferred['type']"
+                                    t-att-TasaOCuota="'%.6f' % (transferred['rate'])"/>
+                            </t>
+                        </cfdi:Traslados>
+                    </t>
+                </cfdi:Impuestos>
+            </t>
+        </cfdi:Comprobante>
+    </template>
+</odoo>

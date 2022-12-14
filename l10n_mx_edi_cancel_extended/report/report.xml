@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+<record id="paperformat_acuse" model="report.paperformat">
+    <field name="name">Acuse Report</field>
+    <field name="default" eval="True"/>
+    <field name="format">custom</field>
+    <field name="page_height">297</field>
+    <field name="page_width">210</field>
+    <field name="orientation">Portrait</field>
+    <field name="margin_top">10</field>
+    <field name="margin_bottom">10</field>
+    <field name="margin_left">3</field>
+    <field name="margin_right">3</field>
+    <field name="header_line" eval="False"/>
+    <field name="header_spacing">3</field>
+    <field name="dpi">80</field>
+</record>
+
+<report
+    id="factura_acuse_report"
+    model="account.move"
+    report_type="qweb-pdf"
+    string="Factura Acuse"
+    file="l10n_mx_edi_cancel_extended.factura_acuse_report_document"
+    name="l10n_mx_edi_cancel_extended.factura_acuse_report_document"
+    print_report_name="'Acuse Cancelacion - %s' % (object.name)"
+    paperformat="paperformat_acuse"/>
+
+    <template id="factura_acuse_report_document" name="factura_acuse_report_document">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="doc">
+                <t t-set="doc" t-value="doc.with_context({'lang':doc.partner_id.lang})"/>
+                <t t-call="web.basic_layout">
+                    <div class="page">
+                        <div class="oe_structure"/>
+                        <t t-set="xml" t-value="doc.get_acuse_values() or {}"/>
+                        <h1 class="text-center"><strong t-field="doc.company_id.name"/></h1>
+                       <div>
+                           <strong>Domicilio:</strong>
+                            Calle: <span t-field="doc.company_id.partner_id.street"/>,
+                            Col. <span t-field="doc.company_id.partner_id.l10n_mx_edi_colony"/>,
+                            CP:<span t-field="doc.company_id.partner_id.zip"/>
+                        <span t-field="doc.company_id.partner_id.city"/>,
+                        <span t-field="doc.company_id.partner_id.state_id.name"/>,
+                         <span t-field="doc.company_id.partner_id.country_id.name"/>
+                       </div>
+                       <br/>
+                       <div>
+                           <strong >RFC Emisor:</strong>
+                           <span style="padding-right:10px" t-esc="xml.get('RfcEmisor')"/>
+                       </div>
+                        <h2 class="text-center"><span style="border-bottom:3px solid black">
+                            <strong>Acuse de cancelación de CFDI</strong>
+                        </span></h2>
+                         <style> b{padding-right:10px}</style>
+                        <br/>
+                       <table style="width:100%">
+                           <tr>
+                               <td>
+                                  <b>Clave del documento:</b> <span t-field="doc.name"/>
+                               </td>
+                               <td>
+                                 <b>Tipo de documento:</b> <span t-esc="'Factura'"/>
+                               </td>
+                           </tr>
+                           <tr>
+                               <td>
+                                 <b>Clave del Receptor:</b> <span t-field="doc.partner_id.ref"/>
+                               </td>
+                               <td>
+                                  <b>Nombre del Receptor:</b><span t-field="doc.partner_id.name"/>
+                               </td>
+                           </tr>
+                           <tr>
+                               <td colspan="2">
+                                   <b>RFC del Receptor:</b>
+                                   <span t-field="doc.partner_id.vat"/>
+                               </td>
+                           </tr>
+                           <tr>
+                               <td colspan="2">
+                                   <b>Fecha y hora de solicitud de la cancelación:</b>
+                                   <span t-esc="xml.get('Fecha')"/>
+                               </td>
+                           </tr>
+                           <tr>
+                               <td colspan="2">
+                                   <b>Fecha la cancelación:</b>
+                                   <span t-esc="xml.get('Fecha')"/>
+                               </td>
+                           </tr>
+                       </table>
+                       <br/>
+                       <table style="width:100%;border-bottom:3px solid black">
+                           <thead class="text-center" style="border-bottom:3px solid black;border-top:3px solid black;">
+                               <th>
+                                   Folio Fiscal (UUID)
+                               </th>
+                               <th>
+                                   Estado CFDI
+                               </th>
+                               <th>
+                                    Importe
+                               </th>
+                           </thead>
+                           <tbody class="text-center">
+                               <tr>
+                                   <td>
+                                       <span t-esc="xml.get('uuid')"/>
+                                   </td>
+                                   <td>
+                                       <span t-field="doc.l10n_mx_edi_sat_status"/>
+                                   </td>
+                                   <td>
+                                        <span t-field="doc.amount_total"/>
+                                   </td>
+                               </tr>
+                           </tbody>
+                       </table>
+                       <br/>
+                       <div>
+                           <strong>Sello digital del SAT:</strong><br/>
+                           <span t-esc="xml.get('sello')"/>
+                       </div>
+                       <div class="oe_structure"/>
+                </div>
+                </t>
+            </t>
+        </t>
+    </template>
+
+
+
+
+</odoo>

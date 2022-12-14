@@ -1,0 +1,1 @@
+# l10n_mx_edi_invoice_global

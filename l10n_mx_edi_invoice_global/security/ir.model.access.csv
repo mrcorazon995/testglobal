@@ -1,0 +1,4 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_wizard_global_invoice,wizard.global.invoice,model_wizard_global_invoice,,1,1,1,1
+access_global_invoice,global.invoice,model_global_invoice,,1,1,1,1
+access_global_invoice_line,global.invoice.line,model_global_invoice_line,,1,1,1,1
